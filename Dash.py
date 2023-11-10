@@ -8,8 +8,8 @@ import sqlalchemy
 from sqlalchemy import create_engine
 
 # pip install plotly-express
-servidor_dns = 'Nome do servidor'
-servidor_database = 'Base de dados'
+servidor_dns = 'servidor'
+servidor_database = 'base de dados'
 url = f'mssql+pyodbc://@{servidor_dns}/{servidor_database}?trusted_connection=yes&driver=SQL+Server'
 engine = sqlalchemy.create_engine (url)
 
