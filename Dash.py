@@ -3,15 +3,7 @@ import streamlit as st
 import plotly.express as px
 import pandas as pd
 import datetime
-import pyodbc
-import sqlalchemy
-from sqlalchemy import create_engine
 
-# pip install plotly-express
-servidor_dns = 'servidor'
-servidor_database = 'base de dados'
-url = f'mssql+pyodbc://@{servidor_dns}/{servidor_database}?trusted_connection=yes&driver=SQL+Server'
-engine = sqlalchemy.create_engine (url)
 
 #def para gerar grafico de barras
 def Gerar_grafico_de_barra_px_bar(dados,color_continuous_scale):
@@ -37,9 +29,10 @@ def Gerar_grafico_de_barra_px_bar(dados,color_continuous_scale):
     st.plotly_chart(grafico, use_container_width=True)
     return grafico
 
-# .\venv\Scripts/activate
+#.\env\Scripts\activate.ps1
 # streamlit run Dash.py
-# streamlit run Dashboard.py
+#deactivate
+
 
 data_day =  datetime.date.today()
 day = data_day.day
@@ -55,16 +48,10 @@ st.set_page_config(layout='wide')
 #Criando Abas para página principal
 pagina1, pagina2 = st.tabs(['Gráficos', 'Tabelas'])
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------
-#base de dados SQL para gerar graficos
-base = pd.read_sql("""
-                        SELECT  
-                        MARA.ERSDA AS Data_Criação,
-                        MARA.MTART AS Tipo_Material,
-                        COUNT( MARA.ERSDA ) AS Quantidade                               
-                        FROM MARA
-                        GROUP BY MARA.ERSDA,MARA.MTART
-                        ORDER BY Data_Criação                    
-                    """,engine)
+#base de dados para gerar graficos
+base = pd.read_csv('U:\\Controladoria\\Cadastro\\14 - AUTOMATIZAÇÃO PYTHON\\Novos\\Grafico_cadastro_usando_streamlit_plotly\\base.csv',sep=',')
+#Base de dados para gerar tabela de dados -dataframe lado esquerdo
+dados_dataframe = pd.read_csv('U:\\Controladoria\\Cadastro\\14 - AUTOMATIZAÇÃO PYTHON\\Novos\\Grafico_cadastro_usando_streamlit_plotly\\dados_dataframe.csv',sep=',')
 
 #deixando dia como primeira data
 base["Data_Criação"] = pd.to_datetime(base["Data_Criação"], dayfirst=True)
@@ -99,17 +86,8 @@ dados_meses = dados_meses.groupby(dados_meses['Data_Criação'].dt.strftime('%B'
 dados_anos = base.groupby(base['Data_Criação'].dt.strftime('%Y'), sort=False)['Quantidade'].sum().reset_index()
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------
 
-#Base de dados para gerar tabela de dados -dataframe lado esquerdo
-dados_dataframe = pd.read_sql("""
-                                    SELECT
-                                    SUBSTRING(MARA.MATNR, PATINDEX('%[^0]%', MARA.MATNR), LEN(MARA.MATNR)) AS Material,
-                                    MARA.MTART AS Tipo_Material,
-                                    MARA.ERSDA AS Data_Criação,
-                                    MARA.ERNAM AS Criado_Por                    
-                                    FROM MARA
-                                    WHERE MARA.ERSDA BETWEEN REPLACE(CONVERT(varchar,FORMAT(getdate(), 'yyyy-MM-01')),'-','') AND REPLACE(CONVERT(varchar,FORMAT(getdate(), 'yyyy-MM-31')),'-','')
-                                    ORDER BY Data_Criação DESC
-                                """,engine )
+
+
 #deixando dia como primeira data                              
 dados_dataframe["Data_Criação"] = pd.to_datetime(dados_dataframe["Data_Criação"], dayfirst=True)
 #ajustando dia mes ano
@@ -118,6 +96,8 @@ dados_dataframe['Data_Criação'] = dados_dataframe['Data_Criação'].dt.strftim
 dados_dataframe = dados_dataframe.loc[(dados_dataframe['Tipo_Material'] == tipo_de_materiais_escolhido)]
 #filtrando apenas colunas de Material e Data_Criação não trazendo Tipo_Material
 dados_dataframe = dados_dataframe[['Material','Data_Criação','Criado_Por']]
+#tirando zero a esquerda
+dados_dataframe['Material'] = dados_dataframe['Material'].str.lstrip('0')
 
 
 #criando paginas
@@ -128,11 +108,10 @@ with pagina1:
     #primeiro grafico lado direto
     with pagina1_coluna2:
         #Titulo
-        st.subheader(f'Mês Atual')
+        st.subheader(f'Ano Atual')
         #condição if não dar erro não houver cadastro neste periodo
-        if len(dados_dias) >0 :
-            #gerando grafico atraves da def
-            Gerar_grafico_de_barra_px_bar(dados=dados_dias,color_continuous_scale=px.colors.sequential.BuPu )
+        if len(dados_meses) >0:
+            Gerar_grafico_de_barra_px_bar(dados=dados_meses,color_continuous_scale=px.colors.sequential.GnBu)
     
     with pagina1_coluna1:
         #Titulo
@@ -144,11 +123,12 @@ with pagina1:
 
     #segundo grafico
     #Titulo
-    st.subheader(f'Ano Atual')
+    st.subheader(f'Mês Atual')
     #condição if não dar erro não houver cadastro neste periodo     
-    if len(dados_meses) >0:
-        Gerar_grafico_de_barra_px_bar(dados=dados_meses,color_continuous_scale=px.colors.sequential.GnBu)
 
+    if len(dados_dias) >0 :
+        #gerando grafico atraves da def
+        Gerar_grafico_de_barra_px_bar(dados=dados_dias,color_continuous_scale=px.colors.sequential.BuPu )
 
 
     #terceiro grafico
@@ -164,5 +144,3 @@ with pagina1:
 #ainda não está sendo utilizada
 with pagina2:
     print('f')
-
-
